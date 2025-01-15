@@ -12,6 +12,12 @@ def tvgTypeMatch(line):
   if typematch:
     return typematch
   return
+
+def groupTitleTypeMatch(line):
+  typematch = re.compile('group-title=\"(.*?)\"', re.IGNORECASE).search(line)
+  if typematch:
+    return typematch
+  return
   
 def ufcwweMatch(line):
   ufcwwematch = re.compile('[U][f][c]|[w][w][e]|[r][i][d][i][c][u][l]', re.IGNORECASE).search(line)
@@ -80,7 +86,7 @@ def tvgChannelMatch(line):
   return
 
 def yearMatch(line):
-  yearmatch = re.compile('[(][1-2][0-9][0-9][0-9][)]').search(line)
+  yearmatch = re.compile('\([1-2][0-9][0-9][0-9]\)').search(line)
   if yearmatch:
     return yearmatch
   return
@@ -134,13 +140,13 @@ def imdbCheck(line):
   return
 
 def parseMovieInfo(info):
-  if ',' in info:
-    info = info.split(',')
+  if '",' in info:
+    info = info.split('",')
   if info[0] == "":
     del info[0]
   info = info[-1]
-  if '#' in info:
-    info = info.split('#')[0]
+#  if '#' in info:
+#    info = info.split('#')[0]
   if ':' in info:
     info = info.split(':')
     if resolutionMatch(info[0]):
@@ -172,7 +178,7 @@ def makeDirectory(directory):
     print("directory found:", directory)
 
 def stripYear(title):
-  yearmatch = re.sub('[(][1-2][0-9][0-9][0-9][)]|[1-2][0-9][0-9][0-9]', "", title)
+  yearmatch = re.sub('\([1-2][0-9][0-9][0-9]\)', "", title)
   if yearmatch:
     return yearmatch.strip()
   return

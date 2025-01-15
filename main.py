@@ -10,6 +10,7 @@ ipttvurl = 'https://tv123.me/m3u.php' #replace url with your link, or comment th
   print(wget.download(url, ('m3u/apollotvshows-'+str(i)+'.m3u')))
   apollolist = streamClasses.rawStreamList('m3u/apollotvshows-'+str(i)+'.m3u')'''
 
-print(wget.download(iptmovieurl, ('m3u/iptmovies.m3u'))) #if not downloading comment out this line.
-apollomovies = streamClasses.rawStreamList('m3u/iptmovies.m3u')
+#print(wget.download(iptmovieurl, ('m3u/iptmovies.m3u'))) #if not downloading comment out this line.
+#apollomovies = streamClasses.rawStreamList('m3u/iptmovies.m3u')
+apollomovies = streamClasses.rawStreamList('tv_channels_421441806_plus.m3u')
 

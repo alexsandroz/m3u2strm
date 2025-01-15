@@ -15,8 +15,9 @@ class Movie(object):
   :param resolution: The resolution of the stream (optional)
   :type resolution: str.
   '''
-  def __init__(self, title, url, year=None, resolution=None, language=None):
+  def __init__(self, title, url, group='geral', year=None, resolution=None, language=None):
     self.title = title.strip()
+    self.group = group
     self.url = url
     self.year = year
     self.resolution = resolution
@@ -28,7 +29,7 @@ class Movie(object):
     :returns: the fully constructed filename with type directory ea. "movies/The Longest Yard - 720p.strm"
     :rtype: str
     '''
-    filestring = [self.title.replace(':','-').replace('*','_').replace('/','_').replace('?','')]
+    filestring = [self.title.replace(':','-').replace('*','_').replace('/','_').replace('?','').replace('"',"'").replace('|','-')]
     if self.year:
       if self.year[0] == "(":
         filestring.append(self.year)
@@ -39,14 +40,15 @@ class Movie(object):
       self.year = "A"
     if self.resolution:
       filestring.append(self.resolution)
-    return ('movies/' + self.title.replace(':','-').replace('*','_').replace('/','_').replace('?','') + ' - ' + self.year + "/" + ' - '.join(filestring) + ".strm")
+#    return ('movies/' + self.title.replace(':','-').replace('*','_').replace('/','_').replace('?','') + ' - ' + self.year + "/" + ' - '.join(filestring) + ".strm")
+    return ('movies/' +  self.group  + "/" + ' - '.join(filestring) + ".strm")  
   
   def makeStream(self):
     filename = self.getFilename()
     directories = filename.split('/')
     directories = directories[:-1]
     typedir = directories[0]
-    moviedir = '/'.join([typedir, directories[1]])
+    moviedir = os.sep.join([typedir, directories[1]])
     if not os.path.exists(typedir):
       os.mkdir(typedir)
     if not os.path.exists(moviedir):
@@ -91,7 +93,7 @@ class TVEpisode(object):
     :returns: the fully constructed filename with type directory ea. "tvshows/Star Trek the Next Generation - Season 02/Star Trek the Next Generation - S02E07 - The Borgs kill Picard - 1080p.strm"
     :rtype: str
     '''
-    filestring = [self.showtitle.replace(':','-').replace('*','_').replace('/','_').replace('?','')]
+    filestring = [self.showtitle.replace(':','-').replace('*','_').replace('/','_').replace('?','').replace('"',"'").replace('|','-')]
     if self.airdate:
       filestring.append(self.airdate.strip())
     else:
@@ -103,22 +105,25 @@ class TVEpisode(object):
     if self.resolution:
       filestring.append(self.resolution.strip())
     if self.seasonnumber:
-      return ('tvshows/' + self.showtitle.strip().replace(':','-').replace('/','_').replace('*','_').replace('?','') + "/" + self.showtitle.strip().replace(':','-').replace('/','-').replace('*','_').replace('?','') + " - Season " + str(self.seasonnumber.strip()) + '/' + ' - '.join(filestring).replace(':','-').replace('*','_') + ".strm")
+      return ('tvshows/' + self.showtitle.strip().replace(':','-').replace('/','_').replace('*','_').replace('?','').replace('"',"'").replace('.','').replace('|','-') + "/" 
+              + self.showtitle.strip().replace(':','-').replace('/','-').replace('*','_').replace('?','').replace('"',"'").replace('|','-') + " - Season " + str(self.seasonnumber.strip()) + '/' 
+              + ' - '.join(filestring).replace(':','-').replace('*','_') + ".strm")
     else:
-      return ('tvshows/' + self.showtitle.strip().replace(':','-').replace('/','_').replace('*','_').replace('?','') +"/" +' - '.join(filestring).replace(':','-').replace('*','_') + ".strm")
+      return ('tvshows/' + self.showtitle.strip().replace(':','-').replace('/','_').replace('*','_').replace('?','').replace('"',"'").replace('.','').replace('|','-') + "/" 
+              + ' - '.join(filestring).replace(':','-').replace('*','_') + ".strm")
   
   def makeStream(self):
     filename = self.getFilename()
     directories = filename.split('/')
     directories = directories[:-1]
     typedir = directories[0]
-    showdir = '/'.join([typedir, directories[1]])
+    showdir = os.sep.join([typedir, directories[1]])
     if not os.path.exists(typedir):
       os.mkdir(typedir)
     if not os.path.exists(showdir):
       os.mkdir(showdir)
     if len(directories) > 2:
-      seasondir = '/'.join([showdir, directories[2]])
+      seasondir = os.sep.join([showdir, directories[2]])
       if not os.path.exists(seasondir):
         os.mkdir(seasondir)
     tools.makeStrm(filename, self.url)
@@ -179,6 +184,19 @@ class rawStreamList(object):
       if streamtype == 'live':
         return 'live'
     
+    groupmatch = tools.groupTitleTypeMatch(streaminfo)
+    if groupmatch:
+      streamtype = groupmatch.group().split('\"')[1].split('|')
+      if streamtype[0]:
+        if streamtype[0].strip().startswith('Series'):
+          return 'vodTV' 
+        elif streamtype[0].strip().startswith('Canais'):
+          return 'live' 
+        elif streamtype[0].strip().startswith('Filmes'):
+          return 'vodMovie' 
+        elif streamtype[0].strip().startswith('Documentarios'):
+          return 'vodMovie' 
+    
     tvshowmatch = tools.sxxExxMatch(streaminfo)
     if tvshowmatch:
       return 'vodTV'
@@ -213,9 +231,9 @@ class rawStreamList(object):
   
   def parseVodTv(self, streaminfo, streamURL):
     #print(streaminfo)
-    title = tools.infoMatch(streaminfo)
-    if title:
-      title = tools.parseMovieInfo(title.group())
+    #title = tools.infoMatch(streaminfo)
+    #if title:
+    title = tools.parseMovieInfo(streaminfo)
     resolution = tools.resolutionMatch(streaminfo)
     if resolution:
       resolution = tools.parseResolution(resolution)
@@ -257,7 +275,15 @@ class rawStreamList(object):
     if language:
       title = tools.stripLanguage(title)
       language = language.group().strip()
-    moviestream = Movie(title, streamURL, year=year, resolution=resolution, language=language)
+    
+    group =  'geral'  
+    groupmatch = tools.groupTitleTypeMatch(streaminfo)
+    if groupmatch:
+      streamtype = groupmatch.group().split('\"')[1].split('|')
+      if len(streamtype) > 1:
+        group = streamtype[1].strip()      
+      
+    moviestream = Movie(title, streamURL, group=group, year=year, resolution=resolution, language=language)
     print(moviestream.__dict__, "MOVIE")
     print(moviestream.getFilename())
     moviestream.makeStream()
