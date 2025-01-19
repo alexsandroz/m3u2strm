@@ -218,7 +218,7 @@ def parseEpisode(title):
     return [showtitle,episodetitle,airdate.group()]
   seasonepisode = sxxExxMatch(title)
   if seasonepisode:
-    print(seasonepisode)
+    #print(seasonepisode)
     if seasonepisode.end() - seasonepisode.start() > 6 or len(seasonepisode.group()) == 5:
       
       episodetitle = title[seasonepisode.end():].strip()

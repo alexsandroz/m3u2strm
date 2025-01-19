@@ -75,8 +75,9 @@ class TVEpisode(object):
   :param airdate: The date the show aired, for daily or nightly shows like news (optional)
   :type airdate: str
   '''
-  def __init__(self, showtitle, url, seasonnumber=None, episodenumber=None ,resolution=None, language=None, episodename=None, airdate=None):
+  def __init__(self, showtitle, url, group='geral', seasonnumber=None, episodenumber=None ,resolution=None, language=None, episodename=None, airdate=None):
     self.showtitle = showtitle
+    self.group = group
     self.episodenumber = episodenumber
     self.seasonnumber = seasonnumber
     self.episodenumber = episodenumber
@@ -105,11 +106,11 @@ class TVEpisode(object):
     if self.resolution:
       filestring.append(self.resolution.strip())
     if self.seasonnumber:
-      return ('tvshows/' + self.showtitle.strip().replace(':','-').replace('/','_').replace('*','_').replace('?','').replace('"',"'").replace('.','').replace('|','-') + "/" 
+      return ('tvshows/' + self.group + '/' + self.showtitle.strip().replace(':','-').replace('/','_').replace('*','_').replace('?','').replace('"',"'").replace('.','').replace('|','-') + "/" 
               + self.showtitle.strip().replace(':','-').replace('/','-').replace('*','_').replace('?','').replace('"',"'").replace('|','-') + " - Season " + str(self.seasonnumber.strip()) + '/' 
               + ' - '.join(filestring).replace(':','-').replace('*','_') + ".strm")
     else:
-      return ('tvshows/' + self.showtitle.strip().replace(':','-').replace('/','_').replace('*','_').replace('?','').replace('"',"'").replace('.','').replace('|','-') + "/" 
+      return ('tvshows/' + self.group + '/' + self.showtitle.strip().replace(':','-').replace('/','_').replace('*','_').replace('?','').replace('"',"'").replace('.','').replace('|','-') + "/" 
               + ' - '.join(filestring).replace(':','-').replace('*','_') + ".strm")
   
   def makeStream(self):
@@ -117,13 +118,16 @@ class TVEpisode(object):
     directories = filename.split('/')
     directories = directories[:-1]
     typedir = directories[0]
-    showdir = os.sep.join([typedir, directories[1]])
+    groupdir = os.sep.join([typedir, directories[1]])
+    showdir = os.sep.join([groupdir, directories[2]])
     if not os.path.exists(typedir):
       os.mkdir(typedir)
+    if not os.path.exists(groupdir):
+      os.mkdir(groupdir)
     if not os.path.exists(showdir):
       os.mkdir(showdir)
-    if len(directories) > 2:
-      seasondir = os.sep.join([showdir, directories[2]])
+    if len(directories) > 3:
+      seasondir = os.sep.join([showdir, directories[3]])
       if not os.path.exists(seasondir):
         os.mkdir(seasondir)
     tools.makeStrm(filename, self.url)
@@ -240,21 +244,31 @@ class rawStreamList(object):
       #print(resolution)
       title = tools.stripResolution(title)
     episodeinfo = tools.parseEpisode(title)
+
+    group =  'geral'  
+    groupmatch = tools.groupTitleTypeMatch(streaminfo)
+    if groupmatch:
+      streamtype = groupmatch.group().split('\"')[1].split('|')
+      if len(streamtype) > 1:
+        group = streamtype[1].strip()    
+
     if episodeinfo:
       if len(episodeinfo) == 3:
         showtitle = episodeinfo[0]
         airdate = episodeinfo[2]
         episodename = episodeinfo[1]
-        episode = TVEpisode(showtitle, streamURL, resolution=resolution, episodename=episodename, airdate=airdate)
+        episode = TVEpisode(showtitle, streamURL, group=group, resolution=resolution, episodename=episodename, airdate=airdate)
       else:
         showtitle = episodeinfo[0]
         episodename = episodeinfo[1]
         seasonnumber = episodeinfo[2]
         episodenumber = episodeinfo[3]
         language = episodeinfo[4]
-        episode = TVEpisode(showtitle, streamURL, seasonnumber=seasonnumber, episodenumber=episodenumber, resolution=resolution, language=language, episodename=episodename)
-    print(episode.__dict__, 'TVSHOW')
-    print(episode.getFilename())
+        episode = TVEpisode(showtitle, streamURL, group=group, seasonnumber=seasonnumber, episodenumber=episodenumber, resolution=resolution, language=language, episodename=episodename)
+
+
+    #print(episode.__dict__, 'TVSHOW')
+    #print(episode.getFilename())
     episode.makeStream()
   
   def parseLiveStream(self, streaminfo, streamURL):
@@ -284,8 +298,8 @@ class rawStreamList(object):
         group = streamtype[1].strip()      
       
     moviestream = Movie(title, streamURL, group=group, year=year, resolution=resolution, language=language)
-    print(moviestream.__dict__, "MOVIE")
-    print(moviestream.getFilename())
+    #print(moviestream.__dict__, "MOVIE")
+    #print(moviestream.getFilename())
     moviestream.makeStream()
 
 
